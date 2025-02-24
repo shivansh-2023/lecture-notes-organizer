@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lecture Notes Organizer</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-center mb-8">Lecture Notes Organizer</h1>
+        
+        {% if error %}
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6" role="alert">
+            <strong class="font-bold">Error!</strong>
+            <span class="block sm:inline">{{ error }}</span>
+        </div>
+        {% endif %}
+        
+        <!-- Upload Section -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Upload Notes</h2>
+            <form id="uploadForm" class="space-y-4">
+                <div class="flex flex-col">
+                    <label class="mb-2 font-medium">Select Image File:</label>
+                    <input type="file" id="fileInput" accept="image/*" class="border p-2 rounded">
+                    <p class="text-sm text-gray-500 mt-1">Supported formats: PNG, JPG, JPEG</p>
+                </div>
+                <div class="flex flex-col">
+                    <label class="mb-2 font-medium">Tags (comma-separated):</label>
+                    <input type="text" id="tags" placeholder="lecture, math, chapter1" class="border p-2 rounded">
+                    <p class="text-sm text-gray-500 mt-1">Add tags to organize your notes</p>
+                </div>
+                <button type="submit" class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition-colors">
+                    Upload and Process
+                </button>
+            </form>
+            <div id="uploadStatus" class="mt-4 hidden"></div>
+        </div>
+
+        <!-- Search Section -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-4">Search Notes</h2>
+            <div class="flex flex-col md:flex-row gap-4 mb-4">
+                <input type="text" id="searchInput" placeholder="Search by content or filename..." 
+                       class="flex-1 border p-2 rounded">
+                <input type="text" id="tagSearch" placeholder="Search by tag..." 
+                       class="flex-1 border p-2 rounded">
+                <button onclick="searchNotes()" class="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600 transition-colors">
+                    Search
+                </button>
+            </div>
+            <div id="searchResults" class="space-y-4"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('fileInput');
+            const tags = document.getElementById('tags').value;
+            const statusDiv = document.getElementById('uploadStatus');
+
+            if (!fileInput.files[0]) {
+                showStatus('Please select a file', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('tags', tags);
+
+            showStatus('Uploading and processing...', 'info');
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showStatus('File processed successfully!', 'success');
+                    fileInput.value = '';
+                    document.getElementById('tags').value = '';
+                    // Automatically search for the newly uploaded note
+                    searchNotes();
+                } else {
+                    throw new Error(data.error || 'Upload failed');
+                }
+            } catch (error) {
+                showStatus(error.message, 'error');
+            }
+        });
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('uploadStatus');
+            statusDiv.style.display = 'block';
+            statusDiv.className = 'mt-4 p-3 rounded';
+            
+            switch(type) {
+                case 'error':
+                    statusDiv.className += ' bg-red-100 text-red-700 border border-red-400';
+                    break;
+                case 'success':
+                    statusDiv.className += ' bg-green-100 text-green-700 border border-green-400';
+                    break;
+                case 'info':
+                    statusDiv.className += ' bg-blue-100 text-blue-700 border border-blue-400';
+                    break;
+            }
+            
+            statusDiv.innerHTML = message;
+        }
+
+        async function searchNotes() {
+            const query = document.getElementById('searchInput').value;
+            const tag = document.getElementById('tagSearch').value;
+            const resultsDiv = document.getElementById('searchResults');
+            
+            try {
+                const response = await fetch(`/search?query=${encodeURIComponent(query)}&tag=${encodeURIComponent(tag)}`);
+                const results = await response.json();
+                
+                if (results.error) {
+                    throw new Error(results.error);
+                }
+                
+                if (results.length === 0) {
+                    resultsDiv.innerHTML = '<p class="text-gray-500 text-center py-4">No results found</p>';
+                    return;
+                }
+
+                resultsDiv.innerHTML = results.map(note => `
+                    <div class="border p-4 rounded-lg hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-semibold text-lg">${note.filename}</h3>
+                            <span class="text-sm text-gray-500">${note.upload_date}</span>
+                        </div>
+                        <p class="text-gray-700 mb-2 whitespace-pre-line">${note.text_preview}</p>
+                        <div class="flex flex-wrap gap-2">
+                            ${note.tags.split(',').map(tag => 
+                                `<span class="bg-gray-200 px-2 py-1 rounded-full text-sm">${tag.trim()}</span>`
+                            ).join('')}
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                        Error: ${error.message}
+                    </div>`;
+            }
+        }
+    </script>
+</body>
+</html>

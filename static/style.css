@@ -1,0 +1,87 @@
+/* Base styles */
+body {
+    min-height: 100vh;
+    background: linear-gradient(to bottom right, #f7fafc, #edf2f7);
+}
+
+.container {
+    max-width: 1200px;
+}
+
+/* File input styling */
+input[type="file"] {
+    border: 2px dashed #e2e8f0;
+    padding: 1rem;
+    cursor: pointer;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease-in-out;
+}
+
+input[type="file"]:hover {
+    border-color: #4299e1;
+    background-color: #ebf8ff;
+}
+
+/* Text inputs */
+input[type="text"] {
+    transition: border-color 0.2s ease-in-out;
+}
+
+input[type="text"]:focus {
+    outline: none;
+    border-color: #4299e1;
+    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+}
+
+/* Buttons */
+button {
+    transition: all 0.2s ease-in-out;
+    position: relative;
+    overflow: hidden;
+}
+
+button:hover {
+    transform: translateY(-1px);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+/* Card animations */
+#searchResults > div {
+    transition: all 0.2s ease-in-out;
+}
+
+#searchResults > div:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Status messages */
+#uploadStatus {
+    transition: all 0.3s ease-in-out;
+}
+
+/* Tags */
+.rounded-full {
+    transition: all 0.2s ease-in-out;
+}
+
+.rounded-full:hover {
+    background-color: #cbd5e0;
+    cursor: pointer;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    button {
+        width: 100%;
+        margin-top: 0.5rem;
+    }
+}
